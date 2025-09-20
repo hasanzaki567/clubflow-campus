@@ -8,8 +8,11 @@ import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import Dashboard from "./pages/Dashboard";
 import Events from "./pages/Events";
+import AddEvent from "./pages/AddEvent";
 import Clubs from "./pages/Clubs";
 import Collaboration from "./pages/Collaboration";
+import Communication from "./pages/Communication";
+import Settings from "./pages/Settings";
 import Layout from "./components/Layout";
 import NotFound from "./pages/NotFound";
 
@@ -27,8 +30,11 @@ const App = () => (
           <Route path="/signup" element={<Signup />} />
           <Route path="/dashboard" element={<Layout><Dashboard /></Layout>} />
           <Route path="/events" element={<Layout><Events /></Layout>} />
+          <Route path="/events/new" element={<Layout><AddEvent /></Layout>} />
           <Route path="/clubs" element={<Layout><Clubs /></Layout>} />
           <Route path="/collaboration" element={<Layout><Collaboration /></Layout>} />
+          <Route path="/communication" element={<Layout><Communication /></Layout>} />
+          <Route path="/settings" element={<Layout><Settings /></Layout>} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
