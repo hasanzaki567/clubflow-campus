@@ -142,7 +142,13 @@ const Signup = () => {
             <div className="mt-6 text-center text-sm">
               <span className="text-muted-foreground">Already have an account? </span>
               <Link to="/login" className="text-primary hover:underline">
-                Sign in
+                Log in
+              </Link>
+            </div>
+
+            <div className="mt-4 text-center">
+              <Link to="/dashboard" className="text-sm text-muted-foreground hover:text-primary hover:underline transition-colors">
+                Skip for now
               </Link>
             </div>
           </CardContent>
