@@ -3,11 +3,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Calendar, MapPin, Users, Clock, Plus, Search, Filter } from "lucide-react";
+import { Calendar, MapPin, Users, Clock, Plus, Search, Filter, Grid3X3 } from "lucide-react";
 import { Link } from "react-router-dom";
+import EventCalendar from "@/components/EventCalendar";
 
 const Events = () => {
   const [searchTerm, setSearchTerm] = useState("");
+  const [viewMode, setViewMode] = useState<"grid" | "calendar">("grid");
 
   // Mock events data
   const events = [
@@ -112,69 +114,89 @@ const Events = () => {
         </Button>
       </div>
 
-      {/* Events Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredEvents.map((event) => (
-          <Card key={event.id} className="shadow-elegant hover:shadow-lg transition-shadow">
-            <CardHeader>
-              <div className="flex justify-between items-start">
-                <Badge variant={getStatusColor(event.status)} className="mb-2">
-                  {event.status}
-                </Badge>
-                <div className="text-right">
-                  <p className="text-sm font-medium text-foreground">{event.date}</p>
-                  <p className="text-xs text-muted-foreground">{event.time}</p>
-                </div>
-              </div>
-              <CardTitle className="text-lg">{event.title}</CardTitle>
-              <CardDescription className="line-clamp-2">{event.description}</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <Users className="h-4 w-4" />
-                  <span>{event.club}</span>
-                </div>
-                
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <MapPin className="h-4 w-4" />
-                  <span>{event.location}</span>
-                </div>
-
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <Clock className="h-4 w-4" />
-                  <span>{event.attendees}/{event.maxAttendees} attendees</span>
-                </div>
-
-                <div className="flex flex-wrap gap-1 mt-3">
-                  {event.tags.map((tag, index) => (
-                    <Badge key={index} variant="secondary" className="text-xs">
-                      {tag}
-                    </Badge>
-                  ))}
-                </div>
-
-                <div className="flex gap-2 mt-4">
-                  <Button size="sm" className="flex-1">
-                    {event.status === "upcoming" ? "RSVP" : event.status === "ongoing" ? "Join Now" : "View Details"}
-                  </Button>
-                  <Button size="sm" variant="outline">
-                    Share
-                  </Button>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-
-      {/* Calendar View Toggle */}
+      {/* View Toggle */}
       <div className="flex justify-center">
-        <Button variant="outline">
-          <Calendar className="h-4 w-4 mr-2" />
-          Switch to Calendar View
-        </Button>
+        <div className="flex bg-muted rounded-lg p-1">
+          <Button
+            variant={viewMode === "grid" ? "default" : "ghost"}
+            size="sm"
+            onClick={() => setViewMode("grid")}
+            className="rounded-md"
+          >
+            <Grid3X3 className="h-4 w-4 mr-2" />
+            Grid View
+          </Button>
+          <Button
+            variant={viewMode === "calendar" ? "default" : "ghost"}
+            size="sm"
+            onClick={() => setViewMode("calendar")}
+            className="rounded-md"
+          >
+            <Calendar className="h-4 w-4 mr-2" />
+            Calendar View
+          </Button>
+        </div>
       </div>
+
+      {/* Content based on view mode */}
+      {viewMode === "grid" ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {filteredEvents.map((event) => (
+            <Card key={event.id} className="shadow-elegant hover:shadow-lg transition-shadow">
+              <CardHeader>
+                <div className="flex justify-between items-start">
+                  <Badge variant={getStatusColor(event.status)} className="mb-2">
+                    {event.status}
+                  </Badge>
+                  <div className="text-right">
+                    <p className="text-sm font-medium text-foreground">{event.date}</p>
+                    <p className="text-xs text-muted-foreground">{event.time}</p>
+                  </div>
+                </div>
+                <CardTitle className="text-lg">{event.title}</CardTitle>
+                <CardDescription className="line-clamp-2">{event.description}</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Users className="h-4 w-4" />
+                    <span>{event.club}</span>
+                  </div>
+
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <MapPin className="h-4 w-4" />
+                    <span>{event.location}</span>
+                  </div>
+
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Clock className="h-4 w-4" />
+                    <span>{event.attendees}/{event.maxAttendees} attendees</span>
+                  </div>
+
+                  <div className="flex flex-wrap gap-1 mt-3">
+                    {event.tags.map((tag, index) => (
+                      <Badge key={index} variant="secondary" className="text-xs">
+                        {tag}
+                      </Badge>
+                    ))}
+                  </div>
+
+                  <div className="flex gap-2 mt-4">
+                    <Button size="sm" className="flex-1">
+                      {event.status === "upcoming" ? "RSVP" : event.status === "ongoing" ? "Join Now" : "View Details"}
+                    </Button>
+                    <Button size="sm" variant="outline">
+                      Share
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      ) : (
+        <EventCalendar events={filteredEvents} />
+      )}
     </div>
   );
 };

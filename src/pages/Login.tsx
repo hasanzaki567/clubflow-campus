@@ -4,6 +4,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Link } from "react-router-dom";
 import { GraduationCap, Users, Sparkles, ArrowRight, Eye, EyeOff, CheckCircle, AlertCircle } from "lucide-react";
+import { useUser } from "@/contexts/UserContext";
+import { dbUtils, verifyPassword, initializeDatabase } from "@/lib/database";
 
 const Login = () => {
   const [username, setUsername] = useState("");
@@ -12,6 +14,7 @@ const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   const [errors, setErrors] = useState<{username?: string; password?: string}>({});
+  const { login } = useUser();
 
   const validateForm = () => {
     const newErrors: {username?: string; password?: string} = {};
@@ -43,21 +46,18 @@ const Login = () => {
     setErrors({});
 
     try {
-      // Simulate login process
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      const success = await login(username, password);
 
-      // Handle login logic here
-      console.log("Login:", { username, password, rememberMe });
-
-      // Simulate success/failure
-      if (username === "admin" && password === "password") {
-        // Success - redirect would happen here
-        console.log("Login successful");
+      if (success) {
+        console.log("✅ Login successful");
+        // The user context will handle the redirect
       } else {
-        throw new Error("Invalid credentials");
+        setErrors({ username: "Invalid username or password", password: "Invalid username or password" });
       }
-    } catch (error) {
-      setErrors({ username: "Invalid username or password", password: "Invalid username or password" });
+    } catch (error: unknown) {
+      console.error("Login error:", error);
+      const errorMessage = error instanceof Error ? error.message : "Login failed. Please try again.";
+      setErrors({ username: errorMessage, password: errorMessage });
     } finally {
       setIsLoading(false);
     }
@@ -112,7 +112,7 @@ const Login = () => {
               Welcome Back
             </h1>
 
-            <p className="text-lg text-gray-300 mb-2">Log in to Campus Club Suite</p>
+            <p className="text-lg text-gray-300 mb-2">Log in to Campbuzz</p>
             <div className="inline-flex items-center px-3 py-1 bg-[hsl(var(--campus-green))]/10 backdrop-blur-sm text-[hsl(var(--campus-green))] text-sm font-medium rounded-full border border-[hsl(var(--campus-green))]/20">
               <Sparkles className="h-3 w-3 mr-1" />
               Enterprise Campus Management Suite
@@ -252,7 +252,17 @@ const Login = () => {
               </Link>
             </div>
 
-            <div className="mt-6 text-center">
+            <div className="mt-6 text-center space-y-3">
+              <Link to="/">
+                <Button
+                  variant="outline"
+                  className="w-full border-[hsl(var(--campus-green))] text-[hsl(var(--campus-green))] hover:bg-[hsl(var(--campus-green))] hover:text-[hsl(var(--campus-navy))] font-semibold py-2 transition-all duration-300 hover:scale-105"
+                >
+                  <GraduationCap className="h-4 w-4 mr-2" />
+                  Go to Home Page
+                  <ArrowRight className="h-4 w-4 ml-2" />
+                </Button>
+              </Link>
               <Link
                 to="/dashboard"
                 className="text-sm text-gray-400 hover:text-gray-300 hover:underline transition-colors inline-flex items-center gap-1"

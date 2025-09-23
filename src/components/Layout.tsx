@@ -34,9 +34,14 @@ import {
   CheckCircle,
   XCircle,
   Eye,
-  EyeOff
+  EyeOff,
+  DollarSign,
+  Handshake,
+  Menu,
+  X
 } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
+import NotificationDropdown from "./NotificationDropdown";
 
 interface LayoutProps {
   children: ReactNode;
@@ -44,6 +49,7 @@ interface LayoutProps {
 
 const Layout = ({ children }: LayoutProps) => {
   const location = useLocation();
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isAdminExpanded, setIsAdminExpanded] = useState(false);
   const [isSearchExpanded, setIsSearchExpanded] = useState(false);
   const [isFavoritesExpanded, setIsFavoritesExpanded] = useState(false);
@@ -59,7 +65,10 @@ const Layout = ({ children }: LayoutProps) => {
     { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
     { name: "Events", href: "/events", icon: Calendar },
     { name: "Clubs", href: "/clubs", icon: Users },
-    { name: "Collaboration", href: "/collaboration", icon: MessageSquare },
+    { name: "Budget Management", href: "/budget", icon: DollarSign },
+    { name: "Sponsorships", href: "/sponsorships", icon: Handshake },
+    { name: "Chat", href: "/chat", icon: MessageSquare },
+    { name: "Collaboration", href: "/collaboration", icon: Users },
     { name: "Communication", href: "/communication", icon: Mail },
     { name: "Settings", href: "/settings", icon: Settings },
   ];
@@ -238,8 +247,11 @@ There was an error signing you out. Please try again or contact support if the p
 
   return (
     <div className="min-h-screen bg-background">
+
       {/* Sidebar */}
-      <div className="fixed inset-y-0 left-0 z-50 w-64 bg-card border-r border-border">
+      <div className={`fixed inset-y-0 left-0 z-50 bg-card border-r border-border transition-all duration-300 ${
+        isSidebarOpen ? 'w-64' : 'w-0 overflow-hidden'
+      }`}>
         <div className="flex flex-col h-full">
           {/* Logo */}
           <div className="flex items-center gap-3 p-6 border-b border-border flex-shrink-0">
@@ -247,8 +259,8 @@ There was an error signing you out. Please try again or contact support if the p
               <GraduationCap className="h-6 w-6" />
             </div>
             <div>
-              <h1 className="font-bold text-lg text-foreground">Campus Club</h1>
-              <p className="text-sm text-muted-foreground">Management Suite</p>
+              <h1 className="font-bold text-lg text-foreground">Campbuzz</h1>
+              <p className="text-sm text-muted-foreground">Campus Management</p>
             </div>
           </div>
 
@@ -506,19 +518,26 @@ There was an error signing you out. Please try again or contact support if the p
       </div>
 
       {/* Main Content */}
-      <div className="pl-64">
+      <div className={`transition-all duration-300 ${isSidebarOpen ? 'pl-64' : 'pl-16'}`}>
         {/* Top Bar */}
         <header className="h-16 border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-40">
           <div className="flex items-center justify-between h-full px-6">
             <div className="flex items-center gap-4">
+              {/* Sidebar Toggle Button */}
+              <Button
+                onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+                className="h-8 w-8 rounded-lg bg-muted hover:bg-muted/80 border-0 shadow-none"
+                size="icon"
+                variant="ghost"
+              >
+                {isSidebarOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
+              </Button>
               <h2 className="text-lg font-semibold text-foreground">
-                {navigation.find(item => isActive(item.href))?.name || "Campus Club Suite"}
+                Campbuzz
               </h2>
             </div>
             <div className="flex items-center gap-3">
-              <Button variant="ghost" size="icon">
-                <Bell className="h-4 w-4" />
-              </Button>
+              <NotificationDropdown />
             </div>
           </div>
         </header>

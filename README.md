@@ -1,73 +1,184 @@
-# Welcome to your Lovable project
+# Campbuzz
 
-## Project info
+A comprehensive campus club management platform built with modern web technologies. This application helps students and administrators manage clubs, events, and inter-college collaborations efficiently.
 
-**URL**: https://lovable.dev/projects/61f57187-4228-477c-83ec-e970eedb88af
+## Features
 
-## How can I edit this code?
+- **Club Management**: Create, manage, and organize campus clubs
+- **Event Planning**: Plan, track, and manage events with RSVP functionality
+- **User Authentication**: Secure login and registration system
+- **Inter-College Collaboration**: Connect and collaborate with clubs from other colleges
+- **Analytics & Insights**: Track engagement and get AI-powered recommendations
+- **Modern UI**: Beautiful glass morphism design with responsive layout
 
-There are several ways of editing your application.
+## Tech Stack
 
-**Use Lovable**
+### Frontend
+- **React 18**: Modern React with hooks and functional components
+- **TypeScript**: Type-safe development
+- **Vite**: Fast build tool and development server
+- **Tailwind CSS**: Utility-first CSS framework
+- **shadcn/ui**: High-quality React components
+- **React Router**: Client-side routing
+- **React Query**: Data fetching and caching
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/61f57187-4228-477c-83ec-e970eedb88af) and start prompting.
+### Backend
+- **Node.js**: Runtime environment
+- **Express.js**: Web framework for API
+- **SQLite**: Lightweight database with better-sqlite3
+- **JWT**: Authentication tokens
+- **bcryptjs**: Password hashing
+- **CORS**: Cross-origin resource sharing
 
-Changes made via Lovable will be committed automatically to this repo.
+## Project Structure
 
-**Use your preferred IDE**
-
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+```
+├── src/                    # Frontend source code
+│   ├── components/         # Reusable React components
+│   ├── contexts/           # React contexts (UserContext)
+│   ├── hooks/              # Custom React hooks
+│   ├── lib/                # Utility libraries (api.ts, database.ts)
+│   ├── pages/              # Page components
+│   └── ...
+├── server/                 # Backend API server
+│   ├── database.js         # Database setup and utilities
+│   ├── server.js           # Express server and routes
+│   ├── package.json        # Backend dependencies
+│   └── README.md           # Backend documentation
+├── public/                 # Static assets
+└── campus_club_suite.db    # SQLite database file
 ```
 
-**Edit a file directly in GitHub**
+## Setup and Installation
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+### Prerequisites
 
-**Use GitHub Codespaces**
+- Node.js (v18 or higher) - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+- npm or yarn package manager
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+### Frontend Setup
 
-## What technologies are used for this project?
+1. **Clone the repository**:
+   ```bash
+   git clone <YOUR_GIT_URL>
+   cd <YOUR_PROJECT_NAME>
+   ```
 
-This project is built with:
+2. **Install frontend dependencies**:
+   ```bash
+   npm install
+   ```
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+3. **Start the frontend development server**:
+   ```bash
+   npm run dev
+   ```
 
-## How can I deploy this project?
+   The frontend will be available at `http://localhost:5173`
 
-Simply open [Lovable](https://lovable.dev/projects/61f57187-4228-477c-83ec-e970eedb88af) and click on Share -> Publish.
+### Backend Setup
 
-## Can I connect a custom domain to my Lovable project?
+1. **Install backend dependencies**:
+   ```bash
+   npm run install-server
+   ```
 
-Yes, you can!
+2. **Start the backend server**:
+   ```bash
+   npm run server:dev
+   ```
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+   The backend API will be available at `http://localhost:3000`
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+### Running Both Frontend and Backend
+
+To run both servers simultaneously:
+
+1. **Terminal 1 - Frontend**:
+   ```bash
+   npm run dev
+   ```
+
+2. **Terminal 2 - Backend**:
+   ```bash
+   npm run server:dev
+   ```
+
+## Default Admin User
+
+When the backend starts, it automatically creates a default admin user:
+
+- **Email**: admin@university.edu
+- **Password**: admin123
+- **Role**: super_admin
+
+## API Documentation
+
+The backend provides RESTful API endpoints. See `server/README.md` for detailed API documentation.
+
+### Key Endpoints
+
+- `POST /api/auth/login` - User login
+- `POST /api/auth/register` - User registration
+- `GET /api/clubs` - Get all clubs
+- `POST /api/clubs` - Create new club
+- `GET /api/events` - Get all events
+- `POST /api/events` - Create new event
+
+## Development
+
+### Available Scripts
+
+- `npm run dev` - Start frontend development server
+- `npm run build` - Build frontend for production
+- `npm run server` - Start backend server
+- `npm run server:dev` - Start backend with hot reload
+- `npm run install-server` - Install backend dependencies
+
+### Making Changes
+
+1. **Frontend Changes**: Edit files in the `src/` directory
+2. **Backend Changes**: Edit files in the `server/` directory
+3. **Database Changes**: Modify schema in `server/database.js`
+
+## Deployment
+
+### Frontend Deployment
+
+1. Build the frontend:
+   ```bash
+   npm run build
+   ```
+
+2. Deploy the `dist/` folder to your hosting provider
+
+### Backend Deployment
+
+1. Set environment variables:
+   ```
+   PORT=3000
+   JWT_SECRET=your-secure-secret-key
+   NODE_ENV=production
+   ```
+
+2. Deploy the `server/` directory to your server
+
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Test thoroughly
+5. Submit a pull request
+
+## License
+
+This project is open source and available under the MIT License.
+
+## Support
+
+For support, please contact the development team or create an issue in the repository.
+
+---
+
+**Built with ❤️ for campus communities**

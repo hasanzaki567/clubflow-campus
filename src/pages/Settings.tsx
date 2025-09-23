@@ -89,7 +89,7 @@ const Settings = () => {
     }
   });
 
-  const updateSetting = (category: string, key: string, value: any) => {
+  const updateSetting = (category: string, key: string, value: unknown) => {
     setSettings(prev => ({
       ...prev,
       [category]: {

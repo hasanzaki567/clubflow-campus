@@ -1,10 +1,12 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { GraduationCap, Users, Calendar, MessageSquare, Trophy, ArrowRight, Sparkles, Star, Zap } from "lucide-react";
+import { GraduationCap, Users, Calendar, MessageSquare, Trophy, ArrowRight, Sparkles, Star, Zap, Plus, Search, Bell, Settings, UserPlus, BookOpen, Filter } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useEffect, useState } from "react";
 
 const Index = () => {
+  console.log('Index component is rendering...');
+
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const [scrollY, setScrollY] = useState(0);
 
@@ -115,8 +117,8 @@ const Index = () => {
                   WebkitBackgroundClip: 'text',
                   WebkitTextFillColor: 'transparent',
                   backgroundClip: 'text'
-                }}>Campus Club Suite</h1>
-                <p className="text-sm text-gray-300/80">Management Platform</p>
+                }}>Campbuzz</h1>
+                <p className="text-sm text-gray-300/80">Campus Management</p>
               </div>
             </div>
             <div className="flex gap-3">
@@ -166,7 +168,7 @@ const Index = () => {
                   </div>
 
                   <h1 className="text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-bold leading-[0.9] tracking-tight text-white" style={{
-                    textShadow: '0 0 30px hsl(var(--campus-green)), 0 0 60px hsl(var(--campus-green)), 0 0 90px hsl(var(--campus-green))',
+                    textShadow: '0 0 10px hsl(var(--campus-green)), 0 0 20px hsl(var(--campus-green))',
                     lineHeight: '1.1',
                     letterSpacing: '-0.02em'
                   }}>
@@ -286,6 +288,170 @@ const Index = () => {
           </div>
         </div>
       </section>
+
+      {/* Quick Actions Section */}
+      <section className="py-16 bg-gradient-to-br from-[hsl(var(--campus-navy))] via-[hsl(220,26%,18%)] to-[hsl(var(--campus-navy))]">
+        <div className="container mx-auto px-4">
+          <div className="text-center mb-12">
+            <div className="mb-4">
+              <span className="inline-block px-4 py-2 bg-[hsl(var(--campus-green))]/10 text-[hsl(var(--campus-green))] text-sm font-semibold rounded-full border border-[hsl(var(--campus-green))]/20">
+                ⚡ Quick Actions
+              </span>
+            </div>
+            <h2 className="text-3xl md:text-4xl font-bold text-white mb-4 tracking-tight">
+              Get Started in Seconds
+            </h2>
+            <p className="text-lg text-gray-300 max-w-2xl mx-auto leading-relaxed">
+              Jump into the most popular actions with one click
+            </p>
+          </div>
+
+          {/* Quick Action Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+            <Card className="group bg-white/5 backdrop-blur-sm border-white/10 shadow-2xl hover:shadow-3xl transition-all duration-500 hover:-translate-y-2 cursor-pointer">
+              <CardContent className="p-6 text-center">
+                <div className="w-16 h-16 bg-gradient-to-br from-[hsl(var(--campus-green))] to-[hsl(var(--campus-green))]/80 rounded-2xl flex items-center justify-center text-[hsl(var(--campus-navy))] text-2xl font-bold mx-auto mb-4 group-hover:scale-110 transition-transform duration-300">
+                  <UserPlus className="h-8 w-8" />
+                </div>
+                <h3 className="text-white font-semibold mb-2">Join Club</h3>
+                <p className="text-gray-400 text-sm mb-4">Browse and join campus clubs</p>
+                <Link to="/clubs">
+                  <Button size="sm" className="bg-[hsl(var(--campus-green))] hover:bg-[hsl(var(--campus-green))/90] text-[hsl(var(--campus-navy))] font-medium px-4 py-2 text-sm">
+                    Join Now
+                  </Button>
+                </Link>
+              </CardContent>
+            </Card>
+
+            <Card className="group bg-white/5 backdrop-blur-sm border-white/10 shadow-2xl hover:shadow-3xl transition-all duration-500 hover:-translate-y-2 cursor-pointer">
+              <CardContent className="p-6 text-center">
+                <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center text-white text-2xl font-bold mx-auto mb-4 group-hover:scale-110 transition-transform duration-300">
+                  <Plus className="h-8 w-8" />
+                </div>
+                <h3 className="text-white font-semibold mb-2">Create Event</h3>
+                <p className="text-gray-400 text-sm mb-4">Plan and organize new events</p>
+                <Link to="/events/new">
+                  <Button size="sm" variant="outline" className="border-blue-500 text-blue-400 hover:bg-blue-500 hover:text-white px-4 py-2 text-sm">
+                    Create Event
+                  </Button>
+                </Link>
+              </CardContent>
+            </Card>
+
+            <Card className="group bg-white/5 backdrop-blur-sm border-white/10 shadow-2xl hover:shadow-3xl transition-all duration-500 hover:-translate-y-2 cursor-pointer">
+              <CardContent className="p-6 text-center">
+                <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl flex items-center justify-center text-white text-2xl font-bold mx-auto mb-4 group-hover:scale-110 transition-transform duration-300">
+                  <Search className="h-8 w-8" />
+                </div>
+                <h3 className="text-white font-semibold mb-2">Browse Clubs</h3>
+                <p className="text-gray-400 text-sm mb-4">Discover clubs by category</p>
+                <Link to="/clubs">
+                  <Button size="sm" variant="outline" className="border-purple-500 text-purple-400 hover:bg-purple-500 hover:text-white px-4 py-2 text-sm">
+                    Browse
+                  </Button>
+                </Link>
+              </CardContent>
+            </Card>
+
+            <Card className="group bg-white/5 backdrop-blur-sm border-white/10 shadow-2xl hover:shadow-3xl transition-all duration-500 hover:-translate-y-2 cursor-pointer">
+              <CardContent className="p-6 text-center">
+                <div className="w-16 h-16 bg-gradient-to-br from-orange-500 to-orange-600 rounded-2xl flex items-center justify-center text-white text-2xl font-bold mx-auto mb-4 group-hover:scale-110 transition-transform duration-300">
+                  <BookOpen className="h-8 w-8" />
+                </div>
+                <h3 className="text-white font-semibold mb-2">View Dashboard</h3>
+                <p className="text-gray-400 text-sm mb-4">Access your personal dashboard</p>
+                <Link to="/dashboard">
+                  <Button size="sm" variant="outline" className="border-orange-500 text-orange-400 hover:bg-orange-500 hover:text-white px-4 py-2 text-sm">
+                    Dashboard
+                  </Button>
+                </Link>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Additional Quick Actions Row */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <Link to="/clubs" className="group">
+              <Card className="bg-white/5 backdrop-blur-sm border-white/10 shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 cursor-pointer">
+                <CardContent className="p-4 text-center">
+                  <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-green-600 rounded-xl flex items-center justify-center text-white text-lg font-bold mx-auto mb-3 group-hover:scale-110 transition-transform duration-300">
+                    <Users className="h-6 w-6" />
+                  </div>
+                  <h4 className="text-white font-medium text-sm mb-1">Find Clubs</h4>
+                  <p className="text-gray-400 text-xs">Discover by interest</p>
+                </CardContent>
+              </Card>
+            </Link>
+
+            <Link to="/events" className="group">
+              <Card className="bg-white/5 backdrop-blur-sm border-white/10 shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 cursor-pointer">
+                <CardContent className="p-4 text-center">
+                  <div className="w-12 h-12 bg-gradient-to-br from-cyan-500 to-cyan-600 rounded-xl flex items-center justify-center text-white text-lg font-bold mx-auto mb-3 group-hover:scale-110 transition-transform duration-300">
+                    <Calendar className="h-6 w-6" />
+                  </div>
+                  <h4 className="text-white font-medium text-sm mb-1">Upcoming Events</h4>
+                  <p className="text-gray-400 text-xs">See what's happening</p>
+                </CardContent>
+              </Card>
+            </Link>
+
+            <Link to="/signup" className="group">
+              <Card className="bg-white/5 backdrop-blur-sm border-white/10 shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 cursor-pointer">
+                <CardContent className="p-4 text-center">
+                  <div className="w-12 h-12 bg-gradient-to-br from-pink-500 to-pink-600 rounded-xl flex items-center justify-center text-white text-lg font-bold mx-auto mb-3 group-hover:scale-110 transition-transform duration-300">
+                    <Bell className="h-6 w-6" />
+                  </div>
+                  <h4 className="text-white font-medium text-sm mb-1">Notifications</h4>
+                  <p className="text-gray-400 text-xs">Stay updated</p>
+                </CardContent>
+              </Card>
+            </Link>
+
+            <Link to="/signup" className="group">
+              <Card className="bg-white/5 backdrop-blur-sm border-white/10 shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 cursor-pointer">
+                <CardContent className="p-4 text-center">
+                  <div className="w-12 h-12 bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-xl flex items-center justify-center text-white text-lg font-bold mx-auto mb-3 group-hover:scale-110 transition-transform duration-300">
+                    <Settings className="h-6 w-6" />
+                  </div>
+                  <h4 className="text-white font-medium text-sm mb-1">Settings</h4>
+                  <p className="text-gray-400 text-xs">Customize experience</p>
+                </CardContent>
+              </Card>
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* Floating Quick Actions - Always Visible */}
+      <div className="fixed bottom-6 right-6 z-50 space-y-3">
+        <div className="flex flex-col gap-3">
+          <Link to="/clubs" className="group">
+            <div className="w-14 h-14 bg-gradient-to-br from-[hsl(var(--campus-green))] to-[hsl(var(--campus-green))]/80 rounded-full flex items-center justify-center text-[hsl(var(--campus-navy))] shadow-2xl hover:shadow-3xl transition-all duration-300 hover:scale-110 hover:-translate-y-1" style={{
+              boxShadow: '0 10px 25px -5px hsl(var(--campus-green)), inset 0 2px 4px rgba(255, 255, 255, 0.2)'
+            }}>
+              <UserPlus className="h-6 w-6 group-hover:rotate-12 transition-transform duration-300" />
+            </div>
+          </Link>
+
+          <Link to="/events/new" className="group">
+            <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center text-white shadow-2xl hover:shadow-3xl transition-all duration-300 hover:scale-110 hover:-translate-y-1">
+              <Plus className="h-6 w-6 group-hover:rotate-90 transition-transform duration-300" />
+            </div>
+          </Link>
+
+          <Link to="/clubs" className="group">
+            <div className="w-14 h-14 bg-gradient-to-br from-purple-500 to-purple-600 rounded-full flex items-center justify-center text-white shadow-2xl hover:shadow-3xl transition-all duration-300 hover:scale-110 hover:-translate-y-1">
+              <Search className="h-6 w-6 group-hover:scale-110 transition-transform duration-300" />
+            </div>
+          </Link>
+
+          <Link to="/signup" className="group">
+            <div className="w-14 h-14 bg-gradient-to-br from-orange-500 to-orange-600 rounded-full flex items-center justify-center text-white shadow-2xl hover:shadow-3xl transition-all duration-300 hover:scale-110 hover:-translate-y-1">
+              <Bell className="h-6 w-6 group-hover:animate-pulse transition-all duration-300" />
+            </div>
+          </Link>
+        </div>
+      </div>
 
       {/* Features Section */}
       <section className="container mx-auto px-4 py-20 relative animate-on-scroll">
