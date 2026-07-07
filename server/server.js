@@ -9,9 +9,36 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 3000;
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
+const NODE_ENV = process.env.NODE_ENV || 'development';
+const allowedOrigins = (process.env.CORS_ORIGIN || '')
+  .split(',')
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+
+const corsOptions = {
+  origin(origin, callback) {
+    // Allow non-browser requests (curl, server-to-server).
+    if (!origin) {
+      return callback(null, true);
+    }
+
+    if (allowedOrigins.length === 0) {
+      if (NODE_ENV === 'production') {
+        return callback(new Error('CORS origin not configured'));
+      }
+      return callback(null, true);
+    }
+
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+
+    return callback(new Error('Not allowed by CORS'));
+  },
+};
 
 // Middleware
-app.use(cors());
+app.use(cors(corsOptions));
 app.use(express.json());
 
 // Authentication middleware
@@ -33,13 +60,24 @@ const authenticateToken = (req, res, next) => {
 };
 
 // Initialize database
-initializeDatabase();
+await initializeDatabase();
 
 // Routes
 
 // Health check
-app.get('/api/health', (req, res) => {
+app.get('/api/health', async (req, res) => {
   res.json({ status: 'OK', message: 'Campbuzz API is running' });
+});
+
+// Readiness check (verifies DB connectivity)
+app.get('/api/ready', async (req, res) => {
+  try {
+    await dbUtils.ping.get();
+    res.json({ status: 'READY', database: 'connected' });
+  } catch (error) {
+    console.error('Readiness check failed:', error);
+    res.status(503).json({ status: 'NOT_READY', database: 'disconnected' });
+  }
 });
 
 // User authentication routes
@@ -51,14 +89,14 @@ app.post('/api/auth/login', async (req, res) => {
       return res.status(400).json({ error: 'Email and password are required' });
     }
 
-    const user = dbUtils.getUserByEmail.get(email);
+    const user = await dbUtils.getUserByEmail.get(email);
 
     if (!user || !(await verifyPassword(password, user.password_hash))) {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
     // Update last login
-    dbUtils.updateUserLastLogin.run(user.id);
+    await dbUtils.updateUserLastLogin.run(user.id);
 
     // Generate JWT token
     const token = jwt.sign(
@@ -92,7 +130,7 @@ app.post('/api/auth/register', async (req, res) => {
     }
 
     // Check if user already exists
-    const existingUser = dbUtils.getUserByEmail.get(email);
+    const existingUser = await dbUtils.getUserByEmail.get(email);
     if (existingUser) {
       return res.status(409).json({ error: 'User already exists' });
     }
@@ -101,7 +139,7 @@ app.post('/api/auth/register', async (req, res) => {
     const passwordHash = await hashPassword(password);
 
     // Create user
-    const result = dbUtils.createUser.run(name, email, college, 'student', passwordHash);
+    const result = await dbUtils.createUser.run(name, email, college, 'student', passwordHash);
 
     res.status(201).json({ message: 'User created successfully', userId: result.lastInsertRowid });
   } catch (error) {
@@ -111,8 +149,8 @@ app.post('/api/auth/register', async (req, res) => {
 });
 
 // Protected routes
-app.get('/api/auth/me', authenticateToken, (req, res) => {
-  const user = dbUtils.getUserById.get(req.user.id);
+app.get('/api/auth/me', authenticateToken, async (req, res) => {
+  const user = await dbUtils.getUserById.get(req.user.id);
   if (!user) {
     return res.status(404).json({ error: 'User not found' });
   }
@@ -130,9 +168,9 @@ app.get('/api/auth/me', authenticateToken, (req, res) => {
 });
 
 // User routes
-app.get('/api/users', authenticateToken, (req, res) => {
+app.get('/api/users', authenticateToken, async (req, res) => {
   try {
-    const users = dbUtils.getAllUsers.all();
+    const users = await dbUtils.getAllUsers.all();
     res.json(users);
   } catch (error) {
     console.error('Get users error:', error);
@@ -141,9 +179,9 @@ app.get('/api/users', authenticateToken, (req, res) => {
 });
 
 // Club routes
-app.get('/api/clubs', (req, res) => {
+app.get('/api/clubs', async (req, res) => {
   try {
-    const clubs = dbUtils.getAllClubs.all();
+    const clubs = await dbUtils.getAllClubs.all();
     res.json(clubs);
   } catch (error) {
     console.error('Get clubs error:', error);
@@ -151,9 +189,9 @@ app.get('/api/clubs', (req, res) => {
   }
 });
 
-app.get('/api/clubs/:id', (req, res) => {
+app.get('/api/clubs/:id', async (req, res) => {
   try {
-    const club = dbUtils.getClubById.get(req.params.id);
+    const club = await dbUtils.getClubById.get(req.params.id);
     if (!club) {
       return res.status(404).json({ error: 'Club not found' });
     }
@@ -172,7 +210,7 @@ app.post('/api/clubs', authenticateToken, async (req, res) => {
       return res.status(400).json({ error: 'Club name is required' });
     }
 
-    const result = dbUtils.createClub.run(name, description, category, req.user.id);
+    const result = await dbUtils.createClub.run(name, description, category, req.user.id);
 
     res.status(201).json({ message: 'Club created successfully', clubId: result.lastInsertRowid });
   } catch (error) {
@@ -182,9 +220,9 @@ app.post('/api/clubs', authenticateToken, async (req, res) => {
 });
 
 // Event routes
-app.get('/api/events', (req, res) => {
+app.get('/api/events', async (req, res) => {
   try {
-    const events = dbUtils.getAllEvents.all();
+    const events = await dbUtils.getAllEvents.all();
     res.json(events);
   } catch (error) {
     console.error('Get events error:', error);
@@ -192,9 +230,9 @@ app.get('/api/events', (req, res) => {
   }
 });
 
-app.get('/api/events/:id', (req, res) => {
+app.get('/api/events/:id', async (req, res) => {
   try {
-    const event = dbUtils.getEventById.get(req.params.id);
+    const event = await dbUtils.getEventById.get(req.params.id);
     if (!event) {
       return res.status(404).json({ error: 'Event not found' });
     }
@@ -205,7 +243,7 @@ app.get('/api/events/:id', (req, res) => {
   }
 });
 
-app.post('/api/events', authenticateToken, (req, res) => {
+app.post('/api/events', authenticateToken, async (req, res) => {
   try {
     const { title, description, club_id, event_date, location, max_attendees } = req.body;
 
@@ -213,7 +251,7 @@ app.post('/api/events', authenticateToken, (req, res) => {
       return res.status(400).json({ error: 'Title and event date are required' });
     }
 
-    const result = dbUtils.createEvent.run(
+    const result = await dbUtils.createEvent.run(
       title,
       description,
       club_id,
@@ -232,9 +270,9 @@ app.post('/api/events', authenticateToken, (req, res) => {
 });
 
 // User-Club relationships
-app.post('/api/clubs/:id/join', authenticateToken, (req, res) => {
+app.post('/api/clubs/:id/join', authenticateToken, async (req, res) => {
   try {
-    const result = dbUtils.joinClub.run(req.user.id, req.params.id, 'member');
+    const result = await dbUtils.joinClub.run(req.user.id, req.params.id, 'member');
     if (result.changes === 0) {
       return res.status(409).json({ error: 'Already a member of this club' });
     }
@@ -245,9 +283,9 @@ app.post('/api/clubs/:id/join', authenticateToken, (req, res) => {
   }
 });
 
-app.delete('/api/clubs/:id/leave', authenticateToken, (req, res) => {
+app.delete('/api/clubs/:id/leave', authenticateToken, async (req, res) => {
   try {
-    const result = dbUtils.leaveClub.run(req.user.id, req.params.id);
+    const result = await dbUtils.leaveClub.run(req.user.id, req.params.id);
     if (result.changes === 0) {
       return res.status(404).json({ error: 'Not a member of this club' });
     }
@@ -258,9 +296,9 @@ app.delete('/api/clubs/:id/leave', authenticateToken, (req, res) => {
   }
 });
 
-app.get('/api/users/:id/clubs', authenticateToken, (req, res) => {
+app.get('/api/users/:id/clubs', authenticateToken, async (req, res) => {
   try {
-    const clubs = dbUtils.getUserClubs.all(req.params.id);
+    const clubs = await dbUtils.getUserClubs.all(req.params.id);
     res.json(clubs);
   } catch (error) {
     console.error('Get user clubs error:', error);
@@ -269,9 +307,9 @@ app.get('/api/users/:id/clubs', authenticateToken, (req, res) => {
 });
 
 // Statistics routes
-app.get('/api/stats/users', authenticateToken, (req, res) => {
+app.get('/api/stats/users', authenticateToken, async (req, res) => {
   try {
-    const stats = dbUtils.getUserStats.get();
+    const stats = await dbUtils.getUserStats.get();
     res.json(stats);
   } catch (error) {
     console.error('Get user stats error:', error);
@@ -279,9 +317,9 @@ app.get('/api/stats/users', authenticateToken, (req, res) => {
   }
 });
 
-app.get('/api/stats/clubs', authenticateToken, (req, res) => {
+app.get('/api/stats/clubs', authenticateToken, async (req, res) => {
   try {
-    const stats = dbUtils.getClubStats.get();
+    const stats = await dbUtils.getClubStats.get();
     res.json(stats);
   } catch (error) {
     console.error('Get club stats error:', error);
@@ -289,9 +327,9 @@ app.get('/api/stats/clubs', authenticateToken, (req, res) => {
   }
 });
 
-app.get('/api/stats/events', authenticateToken, (req, res) => {
+app.get('/api/stats/events', authenticateToken, async (req, res) => {
   try {
-    const stats = dbUtils.getEventStats.get();
+    const stats = await dbUtils.getEventStats.get();
     res.json(stats);
   } catch (error) {
     console.error('Get event stats error:', error);
@@ -300,9 +338,9 @@ app.get('/api/stats/events', authenticateToken, (req, res) => {
 });
 
 // Chat API Routes
-app.get('/api/chat/conversations', authenticateToken, (req, res) => {
+app.get('/api/chat/conversations', authenticateToken, async (req, res) => {
   try {
-    const conversations = dbUtils.getUserConversations.all(req.user.id);
+    const conversations = await dbUtils.getUserConversations.all(req.user.id);
     res.json(conversations);
   } catch (error) {
     console.error('Get conversations error:', error);
@@ -310,15 +348,15 @@ app.get('/api/chat/conversations', authenticateToken, (req, res) => {
   }
 });
 
-app.get('/api/chat/conversations/:id', authenticateToken, (req, res) => {
+app.get('/api/chat/conversations/:id', authenticateToken, async (req, res) => {
   try {
-    const conversation = dbUtils.getConversationById.get(req.params.id);
+    const conversation = await dbUtils.getConversationById.get(req.params.id);
     if (!conversation) {
       return res.status(404).json({ error: 'Conversation not found' });
     }
 
     // Check if user is a participant
-    const participants = dbUtils.getConversationParticipants.all(req.params.id);
+    const participants = await dbUtils.getConversationParticipants.all(req.params.id);
     const isParticipant = participants.some(p => p.user_id === req.user.id);
 
     if (!isParticipant) {
@@ -332,7 +370,7 @@ app.get('/api/chat/conversations/:id', authenticateToken, (req, res) => {
   }
 });
 
-app.post('/api/chat/conversations', authenticateToken, (req, res) => {
+app.post('/api/chat/conversations', authenticateToken, async (req, res) => {
   try {
     const { title, category, participantIds, priority = 'normal' } = req.body;
 
@@ -341,7 +379,7 @@ app.post('/api/chat/conversations', authenticateToken, (req, res) => {
     }
 
     // Create conversation
-    const result = dbUtils.createConversation.run(
+    const result = await dbUtils.createConversation.run(
       title,
       category,
       'active',
@@ -357,20 +395,20 @@ app.post('/api/chat/conversations', authenticateToken, (req, res) => {
     const allParticipantIds = [...new Set([req.user.id, ...participantIds])];
 
     for (const userId of allParticipantIds) {
-      const user = dbUtils.getUserById.get(userId);
+      const user = await dbUtils.getUserById.get(userId);
       if (user) {
         const participantType = userId === req.user.id ? 'user' : 'user';
-        dbUtils.addParticipant.run(conversationId, userId, participantType, 'member', 0);
+        await dbUtils.addParticipant.run(conversationId, userId, participantType, 'member', 0);
       }
     }
 
     // Update conversation last activity
-    dbUtils.updateConversationLastActivity.run(conversationId);
+    await dbUtils.updateConversationLastActivity.run(conversationId);
 
     res.status(201).json({
       message: 'Conversation created successfully',
       conversationId,
-      conversation: dbUtils.getConversationById.get(conversationId)
+      conversation: await dbUtils.getConversationById.get(conversationId)
     });
   } catch (error) {
     console.error('Create conversation error:', error);
@@ -378,17 +416,17 @@ app.post('/api/chat/conversations', authenticateToken, (req, res) => {
   }
 });
 
-app.get('/api/chat/conversations/:id/messages', authenticateToken, (req, res) => {
+app.get('/api/chat/conversations/:id/messages', authenticateToken, async (req, res) => {
   try {
     const { limit = 50, offset = 0 } = req.query;
-    const messages = dbUtils.getConversationMessages.all(req.params.id);
+    const messages = await dbUtils.getConversationMessages.all(req.params.id);
 
     // Mark messages as read
-    dbUtils.updateParticipantLastRead.run(req.params.id, req.user.id);
+    await dbUtils.updateParticipantLastRead.run(req.params.id, req.user.id);
 
     // Update unread count
-    const unreadCount = dbUtils.getUnreadMessageCount.get(req.params.id, req.user.id);
-    dbUtils.updateConversationUnreadCount.run(unreadCount.unread_count, req.params.id);
+    const unreadCount = await dbUtils.getUnreadMessageCount.get(req.params.id, req.user.id);
+    await dbUtils.updateConversationUnreadCount.run(unreadCount.unread_count, req.params.id);
 
     res.json(messages.slice(offset, offset + limit));
   } catch (error) {
@@ -397,7 +435,7 @@ app.get('/api/chat/conversations/:id/messages', authenticateToken, (req, res) =>
   }
 });
 
-app.post('/api/chat/conversations/:id/messages', authenticateToken, (req, res) => {
+app.post('/api/chat/conversations/:id/messages', authenticateToken, async (req, res) => {
   try {
     const { content, messageType = 'text', priority = 'normal', replyToId, metadata = {} } = req.body;
 
@@ -406,7 +444,7 @@ app.post('/api/chat/conversations/:id/messages', authenticateToken, (req, res) =
     }
 
     // Check if user is a participant
-    const participants = dbUtils.getConversationParticipants.all(req.params.id);
+    const participants = await dbUtils.getConversationParticipants.all(req.params.id);
     const isParticipant = participants.some(p => p.user_id === req.user.id);
 
     if (!isParticipant) {
@@ -414,7 +452,7 @@ app.post('/api/chat/conversations/:id/messages', authenticateToken, (req, res) =
     }
 
     // Create message
-    const result = dbUtils.createMessage.run(
+    const result = await dbUtils.createMessage.run(
       req.params.id,
       req.user.id,
       content,
@@ -428,17 +466,17 @@ app.post('/api/chat/conversations/:id/messages', authenticateToken, (req, res) =
     const messageId = result.lastInsertRowid;
 
     // Update conversation last activity
-    dbUtils.updateConversationLastActivity.run(req.params.id);
+    await dbUtils.updateConversationLastActivity.run(req.params.id);
 
     // Update unread count for other participants
     const otherParticipants = participants.filter(p => p.user_id !== req.user.id);
     for (const participant of otherParticipants) {
-      const unreadCount = dbUtils.getUnreadMessageCount.get(req.params.id, participant.user_id);
-      dbUtils.updateConversationUnreadCount.run(unreadCount.unread_count + 1, req.params.id);
+      const unreadCount = await dbUtils.getUnreadMessageCount.get(req.params.id, participant.user_id);
+      await dbUtils.updateConversationUnreadCount.run(unreadCount.unread_count + 1, req.params.id);
     }
 
     // Get the created message with sender info
-    const message = dbUtils.getMessageById.get(messageId);
+    const message = await dbUtils.getMessageById.get(messageId);
 
     res.status(201).json({
       message: 'Message sent successfully',
@@ -450,7 +488,7 @@ app.post('/api/chat/conversations/:id/messages', authenticateToken, (req, res) =
   }
 });
 
-app.post('/api/chat/messages/:id/reactions', authenticateToken, (req, res) => {
+app.post('/api/chat/messages/:id/reactions', authenticateToken, async (req, res) => {
   try {
     const { emoji } = req.body;
 
@@ -459,16 +497,16 @@ app.post('/api/chat/messages/:id/reactions', authenticateToken, (req, res) => {
     }
 
     // Check if user has already reacted with this emoji
-    const existingReaction = dbUtils.getMessageReactions.get(req.params.id);
+    const existingReaction = await dbUtils.getMessageReactions.get(req.params.id);
     const userReactions = existingReaction?.find(r => r.user_ids?.includes(req.user.id.toString()));
 
     if (userReactions && userReactions.emoji === emoji) {
       // Remove reaction
-      dbUtils.removeReaction.run(req.params.id, req.user.id, emoji);
+      await dbUtils.removeReaction.run(req.params.id, req.user.id, emoji);
       res.json({ message: 'Reaction removed' });
     } else {
       // Add reaction
-      dbUtils.addReaction.run(req.params.id, req.user.id, emoji);
+      await dbUtils.addReaction.run(req.params.id, req.user.id, emoji);
       res.json({ message: 'Reaction added' });
     }
   } catch (error) {
@@ -477,9 +515,9 @@ app.post('/api/chat/messages/:id/reactions', authenticateToken, (req, res) => {
   }
 });
 
-app.get('/api/chat/messages/:id/reactions', authenticateToken, (req, res) => {
+app.get('/api/chat/messages/:id/reactions', authenticateToken, async (req, res) => {
   try {
-    const reactions = dbUtils.getMessageReactions.all(req.params.id);
+    const reactions = await dbUtils.getMessageReactions.all(req.params.id);
     res.json(reactions);
   } catch (error) {
     console.error('Get reactions error:', error);
@@ -487,7 +525,7 @@ app.get('/api/chat/messages/:id/reactions', authenticateToken, (req, res) => {
   }
 });
 
-app.post('/api/chat/conversations/:id/files', authenticateToken, (req, res) => {
+app.post('/api/chat/conversations/:id/files', authenticateToken, async (req, res) => {
   try {
     const { fileName, fileSize, fileType, fileUrl } = req.body;
 
@@ -496,7 +534,7 @@ app.post('/api/chat/conversations/:id/files', authenticateToken, (req, res) => {
     }
 
     // Create a system message for the file
-    const messageResult = dbUtils.createMessage.run(
+    const messageResult = await dbUtils.createMessage.run(
       req.params.id,
       req.user.id,
       `Shared file: ${fileName}`,
@@ -510,10 +548,10 @@ app.post('/api/chat/conversations/:id/files', authenticateToken, (req, res) => {
     const messageId = messageResult.lastInsertRowid;
 
     // Create file record
-    dbUtils.createFile.run(messageId, fileName, fileSize, fileType, fileUrl, req.user.id);
+    await dbUtils.createFile.run(messageId, fileName, fileSize, fileType, fileUrl, req.user.id);
 
     // Update conversation last activity
-    dbUtils.updateConversationLastActivity.run(req.params.id);
+    await dbUtils.updateConversationLastActivity.run(req.params.id);
 
     res.status(201).json({
       message: 'File uploaded successfully',
@@ -526,7 +564,7 @@ app.post('/api/chat/conversations/:id/files', authenticateToken, (req, res) => {
   }
 });
 
-app.get('/api/chat/search/conversations', authenticateToken, (req, res) => {
+app.get('/api/chat/search/conversations', authenticateToken, async (req, res) => {
   try {
     const { q } = req.query;
 
@@ -534,7 +572,7 @@ app.get('/api/chat/search/conversations', authenticateToken, (req, res) => {
       return res.status(400).json({ error: 'Search query is required' });
     }
 
-    const conversations = dbUtils.searchConversations.all(`%${q}%`, `%${q}%`);
+    const conversations = await dbUtils.searchConversations.all(`%${q}%`, `%${q}%`);
     res.json(conversations);
   } catch (error) {
     console.error('Search conversations error:', error);
@@ -542,7 +580,7 @@ app.get('/api/chat/search/conversations', authenticateToken, (req, res) => {
   }
 });
 
-app.get('/api/chat/search/messages', authenticateToken, (req, res) => {
+app.get('/api/chat/search/messages', authenticateToken, async (req, res) => {
   try {
     const { q, conversationId } = req.query;
 
@@ -550,10 +588,11 @@ app.get('/api/chat/search/messages', authenticateToken, (req, res) => {
       return res.status(400).json({ error: 'Search query is required' });
     }
 
-    const messages = dbUtils.searchMessages.all(
+    const conversationFilter = Number(conversationId) || 0;
+    const messages = await dbUtils.searchMessages.all(
       `%${q}%`,
-      conversationId || 0,
-      conversationId || 0
+      conversationFilter,
+      conversationFilter
     );
     res.json(messages);
   } catch (error) {
@@ -562,9 +601,9 @@ app.get('/api/chat/search/messages', authenticateToken, (req, res) => {
   }
 });
 
-app.get('/api/chat/stats', authenticateToken, (req, res) => {
+app.get('/api/chat/stats', authenticateToken, async (req, res) => {
   try {
-    const stats = dbUtils.getChatStats.get();
+    const stats = await dbUtils.getChatStats.get();
     res.json(stats);
   } catch (error) {
     console.error('Get chat stats error:', error);
@@ -596,7 +635,7 @@ app.post('/api/chat/ai-response', authenticateToken, async (req, res) => {
     const aiResponse = responses[Math.floor(Math.random() * responses.length)];
 
     // Create AI message in conversation
-    const result = dbUtils.createMessage.run(
+    const result = await dbUtils.createMessage.run(
       conversationId,
       req.user.id, // Using user ID for now, should be AI user ID
       aiResponse,
@@ -612,7 +651,7 @@ app.post('/api/chat/ai-response', authenticateToken, async (req, res) => {
     );
 
     const messageId = result.lastInsertRowid;
-    const messageData = dbUtils.getMessageById.get(messageId);
+    const messageData = await dbUtils.getMessageById.get(messageId);
 
     res.json({
       message: 'Message sent successfully',
@@ -625,9 +664,9 @@ app.post('/api/chat/ai-response', authenticateToken, async (req, res) => {
 });
 
 // Budget API Routes
-app.get('/api/budgets', authenticateToken, (req, res) => {
+app.get('/api/budgets', authenticateToken, async (req, res) => {
   try {
-    const budgets = dbUtils.getAllBudgets.all();
+    const budgets = await dbUtils.getAllBudgets.all();
     res.json(budgets);
   } catch (error) {
     console.error('Get budgets error:', error);
@@ -635,9 +674,9 @@ app.get('/api/budgets', authenticateToken, (req, res) => {
   }
 });
 
-app.get('/api/budgets/:id', authenticateToken, (req, res) => {
+app.get('/api/budgets/:id', authenticateToken, async (req, res) => {
   try {
-    const budget = dbUtils.getBudgetById.get(req.params.id);
+    const budget = await dbUtils.getBudgetById.get(req.params.id);
     if (!budget) {
       return res.status(404).json({ error: 'Budget not found' });
     }
@@ -648,7 +687,7 @@ app.get('/api/budgets/:id', authenticateToken, (req, res) => {
   }
 });
 
-app.post('/api/budgets', authenticateToken, (req, res) => {
+app.post('/api/budgets', authenticateToken, async (req, res) => {
   try {
     const {
       title,
@@ -674,7 +713,7 @@ app.post('/api/budgets', authenticateToken, (req, res) => {
       return res.status(400).json({ error: 'Title, category, type, amount, fiscal_year, and fiscal_period are required' });
     }
 
-    const result = dbUtils.createBudget.run(
+    const result = await dbUtils.createBudget.run(
       title,
       description,
       category,
@@ -698,7 +737,7 @@ app.post('/api/budgets', authenticateToken, (req, res) => {
     );
 
     const budgetId = result.lastInsertRowid;
-    const budget = dbUtils.getBudgetById.get(budgetId);
+    const budget = await dbUtils.getBudgetById.get(budgetId);
 
     res.status(201).json({
       message: 'Budget created successfully',
@@ -710,7 +749,7 @@ app.post('/api/budgets', authenticateToken, (req, res) => {
   }
 });
 
-app.put('/api/budgets/:id', authenticateToken, (req, res) => {
+app.put('/api/budgets/:id', authenticateToken, async (req, res) => {
   try {
     const {
       title,
@@ -732,12 +771,12 @@ app.put('/api/budgets/:id', authenticateToken, (req, res) => {
       tags
     } = req.body;
 
-    const existingBudget = dbUtils.getBudgetById.get(req.params.id);
+    const existingBudget = await dbUtils.getBudgetById.get(req.params.id);
     if (!existingBudget) {
       return res.status(404).json({ error: 'Budget not found' });
     }
 
-    dbUtils.updateBudget.run(
+    await dbUtils.updateBudget.run(
       title,
       description,
       category,
@@ -764,7 +803,7 @@ app.put('/api/budgets/:id', authenticateToken, (req, res) => {
       req.params.id
     );
 
-    const updatedBudget = dbUtils.getBudgetById.get(req.params.id);
+    const updatedBudget = await dbUtils.getBudgetById.get(req.params.id);
     res.json({
       message: 'Budget updated successfully',
       budget: updatedBudget
@@ -775,16 +814,16 @@ app.put('/api/budgets/:id', authenticateToken, (req, res) => {
   }
 });
 
-app.post('/api/budgets/:id/approve', authenticateToken, (req, res) => {
+app.post('/api/budgets/:id/approve', authenticateToken, async (req, res) => {
   try {
-    const budget = dbUtils.getBudgetById.get(req.params.id);
+    const budget = await dbUtils.getBudgetById.get(req.params.id);
     if (!budget) {
       return res.status(404).json({ error: 'Budget not found' });
     }
 
-    dbUtils.updateBudgetStatus.run('approved', req.user.id, req.params.id);
+    await dbUtils.updateBudgetStatus.run('approved', req.user.id, req.params.id);
 
-    const updatedBudget = dbUtils.getBudgetById.get(req.params.id);
+    const updatedBudget = await dbUtils.getBudgetById.get(req.params.id);
     res.json({
       message: 'Budget approved successfully',
       budget: updatedBudget
@@ -795,14 +834,14 @@ app.post('/api/budgets/:id/approve', authenticateToken, (req, res) => {
   }
 });
 
-app.delete('/api/budgets/:id', authenticateToken, (req, res) => {
+app.delete('/api/budgets/:id', authenticateToken, async (req, res) => {
   try {
-    const budget = dbUtils.getBudgetById.get(req.params.id);
+    const budget = await dbUtils.getBudgetById.get(req.params.id);
     if (!budget) {
       return res.status(404).json({ error: 'Budget not found' });
     }
 
-    dbUtils.deleteBudget.run(req.params.id);
+    await dbUtils.deleteBudget.run(req.params.id);
     res.json({ message: 'Budget deleted successfully' });
   } catch (error) {
     console.error('Delete budget error:', error);
@@ -811,9 +850,9 @@ app.delete('/api/budgets/:id', authenticateToken, (req, res) => {
 });
 
 // Budget Transactions API
-app.get('/api/budgets/:id/transactions', authenticateToken, (req, res) => {
+app.get('/api/budgets/:id/transactions', authenticateToken, async (req, res) => {
   try {
-    const transactions = dbUtils.getBudgetTransactions.all(req.params.id);
+    const transactions = await dbUtils.getBudgetTransactions.all(req.params.id);
     res.json(transactions);
   } catch (error) {
     console.error('Get budget transactions error:', error);
@@ -821,7 +860,7 @@ app.get('/api/budgets/:id/transactions', authenticateToken, (req, res) => {
   }
 });
 
-app.post('/api/budgets/:id/transactions', authenticateToken, (req, res) => {
+app.post('/api/budgets/:id/transactions', authenticateToken, async (req, res) => {
   try {
     const {
       transaction_type,
@@ -839,7 +878,7 @@ app.post('/api/budgets/:id/transactions', authenticateToken, (req, res) => {
       return res.status(400).json({ error: 'Transaction type, amount, and transaction date are required' });
     }
 
-    const result = dbUtils.createBudgetTransaction.run(
+    const result = await dbUtils.createBudgetTransaction.run(
       req.params.id,
       transaction_type,
       amount,
@@ -856,7 +895,8 @@ app.post('/api/budgets/:id/transactions', authenticateToken, (req, res) => {
     );
 
     const transactionId = result.lastInsertRowid;
-    const transaction = dbUtils.getBudgetTransactions.all(req.params.id).find(t => t.id === transactionId);
+    const transactions = await dbUtils.getBudgetTransactions.all(req.params.id);
+    const transaction = transactions.find((t) => t.id === transactionId);
 
     res.status(201).json({
       message: 'Budget transaction created successfully',
@@ -869,9 +909,9 @@ app.post('/api/budgets/:id/transactions', authenticateToken, (req, res) => {
 });
 
 // Sponsorship API Routes
-app.get('/api/sponsorships', authenticateToken, (req, res) => {
+app.get('/api/sponsorships', authenticateToken, async (req, res) => {
   try {
-    const sponsorships = dbUtils.getAllSponsorships.all();
+    const sponsorships = await dbUtils.getAllSponsorships.all();
     res.json(sponsorships);
   } catch (error) {
     console.error('Get sponsorships error:', error);
@@ -879,9 +919,9 @@ app.get('/api/sponsorships', authenticateToken, (req, res) => {
   }
 });
 
-app.get('/api/sponsorships/:id', authenticateToken, (req, res) => {
+app.get('/api/sponsorships/:id', authenticateToken, async (req, res) => {
   try {
-    const sponsorship = dbUtils.getSponsorshipById.get(req.params.id);
+    const sponsorship = await dbUtils.getSponsorshipById.get(req.params.id);
     if (!sponsorship) {
       return res.status(404).json({ error: 'Sponsorship not found' });
     }
@@ -892,7 +932,7 @@ app.get('/api/sponsorships/:id', authenticateToken, (req, res) => {
   }
 });
 
-app.post('/api/sponsorships', authenticateToken, (req, res) => {
+app.post('/api/sponsorships', authenticateToken, async (req, res) => {
   try {
     const {
       title,
@@ -927,7 +967,7 @@ app.post('/api/sponsorships', authenticateToken, (req, res) => {
       return res.status(400).json({ error: 'Title, sponsor_name, sponsor_type, category, sponsorship_type, and fiscal_year are required' });
     }
 
-    const result = dbUtils.createSponsorship.run(
+    const result = await dbUtils.createSponsorship.run(
       title,
       description,
       sponsor_name,
@@ -958,7 +998,7 @@ app.post('/api/sponsorships', authenticateToken, (req, res) => {
     );
 
     const sponsorshipId = result.lastInsertRowid;
-    const sponsorship = dbUtils.getSponsorshipById.get(sponsorshipId);
+    const sponsorship = await dbUtils.getSponsorshipById.get(sponsorshipId);
 
     res.status(201).json({
       message: 'Sponsorship created successfully',
@@ -970,7 +1010,7 @@ app.post('/api/sponsorships', authenticateToken, (req, res) => {
   }
 });
 
-app.put('/api/sponsorships/:id', authenticateToken, (req, res) => {
+app.put('/api/sponsorships/:id', authenticateToken, async (req, res) => {
   try {
     const {
       title,
@@ -1001,12 +1041,12 @@ app.put('/api/sponsorships/:id', authenticateToken, (req, res) => {
       tags
     } = req.body;
 
-    const existingSponsorship = dbUtils.getSponsorshipById.get(req.params.id);
+    const existingSponsorship = await dbUtils.getSponsorshipById.get(req.params.id);
     if (!existingSponsorship) {
       return res.status(404).json({ error: 'Sponsorship not found' });
     }
 
-    dbUtils.updateSponsorship.run(
+    await dbUtils.updateSponsorship.run(
       title,
       description,
       sponsor_name,
@@ -1039,7 +1079,7 @@ app.put('/api/sponsorships/:id', authenticateToken, (req, res) => {
       req.params.id
     );
 
-    const updatedSponsorship = dbUtils.getSponsorshipById.get(req.params.id);
+    const updatedSponsorship = await dbUtils.getSponsorshipById.get(req.params.id);
     res.json({
       message: 'Sponsorship updated successfully',
       sponsorship: updatedSponsorship
@@ -1050,16 +1090,16 @@ app.put('/api/sponsorships/:id', authenticateToken, (req, res) => {
   }
 });
 
-app.post('/api/sponsorships/:id/approve', authenticateToken, (req, res) => {
+app.post('/api/sponsorships/:id/approve', authenticateToken, async (req, res) => {
   try {
-    const sponsorship = dbUtils.getSponsorshipById.get(req.params.id);
+    const sponsorship = await dbUtils.getSponsorshipById.get(req.params.id);
     if (!sponsorship) {
       return res.status(404).json({ error: 'Sponsorship not found' });
     }
 
-    dbUtils.updateSponsorshipStatus.run('approved', null, null, req.params.id);
+    await dbUtils.updateSponsorshipStatus.run('approved', null, null, req.params.id);
 
-    const updatedSponsorship = dbUtils.getSponsorshipById.get(req.params.id);
+    const updatedSponsorship = await dbUtils.getSponsorshipById.get(req.params.id);
     res.json({
       message: 'Sponsorship approved successfully',
       sponsorship: updatedSponsorship
@@ -1070,16 +1110,16 @@ app.post('/api/sponsorships/:id/approve', authenticateToken, (req, res) => {
   }
 });
 
-app.post('/api/sponsorships/:id/activate', authenticateToken, (req, res) => {
+app.post('/api/sponsorships/:id/activate', authenticateToken, async (req, res) => {
   try {
-    const sponsorship = dbUtils.getSponsorshipById.get(req.params.id);
+    const sponsorship = await dbUtils.getSponsorshipById.get(req.params.id);
     if (!sponsorship) {
       return res.status(404).json({ error: 'Sponsorship not found' });
     }
 
-    dbUtils.updateSponsorshipStatus.run('active', 'active', 'completed', req.params.id);
+    await dbUtils.updateSponsorshipStatus.run('active', 'active', 'completed', req.params.id);
 
-    const updatedSponsorship = dbUtils.getSponsorshipById.get(req.params.id);
+    const updatedSponsorship = await dbUtils.getSponsorshipById.get(req.params.id);
     res.json({
       message: 'Sponsorship activated successfully',
       sponsorship: updatedSponsorship
@@ -1090,14 +1130,14 @@ app.post('/api/sponsorships/:id/activate', authenticateToken, (req, res) => {
   }
 });
 
-app.delete('/api/sponsorships/:id', authenticateToken, (req, res) => {
+app.delete('/api/sponsorships/:id', authenticateToken, async (req, res) => {
   try {
-    const sponsorship = dbUtils.getSponsorshipById.get(req.params.id);
+    const sponsorship = await dbUtils.getSponsorshipById.get(req.params.id);
     if (!sponsorship) {
       return res.status(404).json({ error: 'Sponsorship not found' });
     }
 
-    dbUtils.deleteSponsorship.run(req.params.id);
+    await dbUtils.deleteSponsorship.run(req.params.id);
     res.json({ message: 'Sponsorship deleted successfully' });
   } catch (error) {
     console.error('Delete sponsorship error:', error);
@@ -1106,9 +1146,9 @@ app.delete('/api/sponsorships/:id', authenticateToken, (req, res) => {
 });
 
 // Budget and Sponsorship Statistics
-app.get('/api/budgets/stats', authenticateToken, (req, res) => {
+app.get('/api/budgets/stats', authenticateToken, async (req, res) => {
   try {
-    const stats = dbUtils.getBudgetStats.get();
+    const stats = await dbUtils.getBudgetStats.get();
     res.json(stats);
   } catch (error) {
     console.error('Get budget stats error:', error);
@@ -1116,9 +1156,9 @@ app.get('/api/budgets/stats', authenticateToken, (req, res) => {
   }
 });
 
-app.get('/api/sponsorships/stats', authenticateToken, (req, res) => {
+app.get('/api/sponsorships/stats', authenticateToken, async (req, res) => {
   try {
-    const stats = dbUtils.getSponsorshipStats.get();
+    const stats = await dbUtils.getSponsorshipStats.get();
     res.json(stats);
   } catch (error) {
     console.error('Get sponsorship stats error:', error);
@@ -1128,9 +1168,9 @@ app.get('/api/sponsorships/stats', authenticateToken, (req, res) => {
 
 // Start server
 app.listen(PORT, () => {
-  console.log(`🚀 Campus Club Suite API server running on port ${PORT}`);
-  console.log(`📊 Health check: http://localhost:${PORT}/api/health`);
-  console.log(`💬 Chat API: http://localhost:${PORT}/api/chat/conversations`);
-  console.log(`💰 Budget API: http://localhost:${PORT}/api/budgets`);
-  console.log(`🤝 Sponsorship API: http://localhost:${PORT}/api/sponsorships`);
+  console.log(`Campus Club Suite API server running on port ${PORT}`);
+  console.log(`Health check: http://localhost:${PORT}/api/health`);
+  console.log(`Chat API: http://localhost:${PORT}/api/chat/conversations`);
+  console.log(`Budget API: http://localhost:${PORT}/api/budgets`);
+  console.log(`Sponsorship API: http://localhost:${PORT}/api/sponsorships`);
 });

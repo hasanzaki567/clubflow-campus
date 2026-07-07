@@ -1,24 +1,148 @@
-import Database from 'better-sqlite3';
-import path from 'path';
-import { fileURLToPath } from 'url';
+import dotenv from 'dotenv';
+import { Pool } from 'pg';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+dotenv.config();
 
-// Database file path
-const DB_PATH = path.join(__dirname, '..', 'campus_club_suite.db');
+const databaseUrl =
+  process.env.DATABASE_URL ||
+  process.env.SUPABASE_DB_URL ||
+  'postgresql://postgres:postgres@127.0.0.1:5432/campusclubconnect';
 
-// Initialize database with error handling
-let db;
+let shouldUseSsl = false;
 try {
-  db = new Database(DB_PATH);
-  // Enable WAL mode for better performance
-  db.pragma('journal_mode = WAL');
-} catch (error) {
-  console.error('Failed to initialize database:', error);
-  // Fallback to in-memory database for development
-  db = new Database(':memory:');
+  const host = new URL(databaseUrl).hostname;
+  shouldUseSsl = !['localhost', '127.0.0.1'].includes(host);
+} catch {
+  shouldUseSsl = false;
 }
+
+const pool = new Pool({
+  connectionString: databaseUrl,
+  ssl: shouldUseSsl ? { rejectUnauthorized: false } : false,
+  keepAlive: true,
+  max: 5,
+  idleTimeoutMillis: 30000,
+  connectionTimeoutMillis: 10000,
+});
+
+pool.on('error', (error) => {
+  console.error('PostgreSQL pool error:', error);
+});
+
+const tablesWithIdPrimaryKey = new Set([
+  'users',
+  'clubs',
+  'events',
+  'chat_conversations',
+  'chat_messages',
+  'chat_reactions',
+  'chat_files',
+  'budgets',
+  'budget_transactions',
+  'sponsorships',
+  'sponsorship_benefits',
+  'sponsorship_deliverables',
+]);
+
+const pendingSchemaStatements = [];
+let schemaReadyPromise;
+
+const convertPlaceholders = (sql) => {
+  let index = 0;
+  return sql.replace(/\?/g, () => `$${++index}`);
+};
+
+const normalizeSql = (sql, { forSchema = false } = {}) => {
+  let normalized = sql.trim();
+
+  normalized = normalized.replace(/GROUP_CONCAT\(user_id\)/gi, "STRING_AGG(user_id::text, ',')");
+  normalized = normalized.replace(/date\('now',\s*'(-?\d+)\s+days'\)/gi, "CURRENT_DATE + INTERVAL '$1 days'");
+  normalized = normalized.replace(/date\('now',\s*'(-?\d+)\s+hours'\)/gi, "NOW() + INTERVAL '$1 hours'");
+  normalized = normalized.replace(/date\('now'\)/gi, 'CURRENT_DATE');
+
+  if (forSchema) {
+    normalized = normalized.replace(/INTEGER\s+PRIMARY\s+KEY\s+AUTOINCREMENT/gi, 'BIGSERIAL PRIMARY KEY');
+    normalized = normalized.replace(/\bAUTOINCREMENT\b/gi, '');
+    normalized = normalized.replace(/\bDATETIME\b/gi, 'TIMESTAMP');
+    normalized = normalized.replace(/\bBOOLEAN\b/gi, 'INTEGER');
+  }
+
+  return convertPlaceholders(normalized);
+};
+
+const runQuery = async (sql, params = []) => {
+  const text = normalizeSql(sql);
+  return pool.query(text, params);
+};
+
+const buildRunSql = (sql) => {
+  const trimmed = sql.trim().replace(/;\s*$/, '');
+  const isInsert = /^INSERT\s+/i.test(trimmed);
+  const isInsertOrIgnore = /^INSERT\s+OR\s+IGNORE\s+/i.test(trimmed);
+  const tableMatch = trimmed.match(/^INSERT\s+(?:OR\s+IGNORE\s+)?INTO\s+([a-zA-Z_][a-zA-Z0-9_]*)/i);
+  const tableName = tableMatch?.[1]?.toLowerCase();
+
+  let sqlText = trimmed.replace(/^INSERT\s+OR\s+IGNORE\s+INTO\s+/i, 'INSERT INTO ');
+
+  if (isInsertOrIgnore && !/\bON\s+CONFLICT\b/i.test(sqlText)) {
+    sqlText += ' ON CONFLICT DO NOTHING';
+  }
+
+  if (isInsert && tableName && tablesWithIdPrimaryKey.has(tableName) && !/\bRETURNING\b/i.test(sqlText)) {
+    sqlText += ' RETURNING id';
+  }
+
+  return sqlText;
+};
+
+const db = {
+  exec(sql) {
+    pendingSchemaStatements.push(sql);
+  },
+  prepare(sql) {
+    return {
+      async get(...params) {
+        const result = await runQuery(sql, params);
+        return result.rows[0];
+      },
+      async all(...params) {
+        const result = await runQuery(sql, params);
+        return result.rows;
+      },
+      async run(...params) {
+        const result = await runQuery(buildRunSql(sql), params);
+        return {
+          changes: result.rowCount,
+          lastInsertRowid: result.rows?.[0]?.id,
+        };
+      },
+    };
+  },
+  async close() {
+    await pool.end();
+  },
+};
+
+const ensureSchema = async () => {
+  if (schemaReadyPromise) {
+    return schemaReadyPromise;
+  }
+
+  schemaReadyPromise = (async () => {
+    for (const block of pendingSchemaStatements) {
+      const statements = block
+        .split(';')
+        .map((statement) => statement.trim())
+        .filter(Boolean);
+
+      for (const statement of statements) {
+        await pool.query(normalizeSql(statement, { forSchema: true }));
+      }
+    }
+  })();
+
+  return schemaReadyPromise;
+};
 
 // Create users table
 db.exec(`
@@ -322,6 +446,10 @@ db.exec(`
 
 // Database utility functions
 export const dbUtils = {
+  ping: db.prepare(`
+    SELECT 1 as ok
+  `),
+
   // User operations
   createUser: db.prepare(`
     INSERT INTO users (name, email, college, role, password_hash)
@@ -809,13 +937,20 @@ export const verifyPassword = async (password, hash) => {
 // Initialize database with default admin user
 export const initializeDatabase = async () => {
   try {
+    await ensureSchema();
+
+    if (process.env.NODE_ENV === 'production') {
+      console.log('Database initialized for production');
+      return;
+    }
+
     // Check if admin user exists
-    const existingAdmin = dbUtils.getUserByEmail.get('admin@university.edu');
+    const existingAdmin = await dbUtils.getUserByEmail.get('admin@university.edu');
 
     if (!existingAdmin) {
       // Create default admin user
       const adminPasswordHash = await hashPassword('admin123');
-      dbUtils.createUser.run('System Administrator', 'admin@university.edu', 'University Central', 'super_admin', adminPasswordHash);
+      await dbUtils.createUser.run('System Administrator', 'admin@university.edu', 'University Central', 'super_admin', adminPasswordHash);
 
       console.log('✅ Database initialized with default admin user');
       console.log('📧 Email: admin@university.edu');
@@ -825,12 +960,13 @@ export const initializeDatabase = async () => {
     }
   } catch (error) {
     console.error('❌ Error initializing database:', error);
+    throw error;
   }
 };
 
 // Close database connection
 export const closeDatabase = () => {
-  db.close();
+  return db.close();
 };
 
 export default db;

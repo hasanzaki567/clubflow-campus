@@ -9,13 +9,13 @@ This is the backend API server for the Campus Club Suite application. It provide
 - **Event Management**: Create and track events
 - **User-Club Relationships**: Join and leave clubs
 - **Statistics**: Get user, club, and event statistics
-- **Database**: SQLite with proper schema and relationships
+- **Database**: PostgreSQL with proper schema and relationships
 
 ## Tech Stack
 
 - **Node.js**: Runtime environment
 - **Express.js**: Web framework
-- **SQLite**: Database with better-sqlite3
+- **PostgreSQL**: Database via pg
 - **JWT**: Authentication tokens
 - **bcryptjs**: Password hashing
 - **CORS**: Cross-origin resource sharing
@@ -34,10 +34,12 @@ This is the backend API server for the Campus Club Suite application. It provide
    PORT=3000
    JWT_SECRET=your-super-secret-jwt-key-change-this-in-production
    NODE_ENV=development
+   DATABASE_URL=postgresql://postgres:<password>@<host>:5432/postgres
    ```
 
 3. **Database**:
-   The database file `campus_club_suite.db` will be created automatically in the root directory when the server starts.
+   The PostgreSQL schema is created automatically when the server starts.
+   For Supabase, use your project database connection string in `DATABASE_URL`.
 
 ## Running the Server
 
@@ -181,7 +183,7 @@ The API returns appropriate HTTP status codes and error messages:
 
 1. Change the JWT_SECRET to a secure random string
 2. Set NODE_ENV=production
-3. Use a production database (PostgreSQL, MySQL, etc.)
+3. Set `DATABASE_URL` to your production PostgreSQL/Supabase connection string
 4. Set up proper logging and monitoring
 5. Configure CORS for your frontend domain
 6. Set up SSL/TLS
