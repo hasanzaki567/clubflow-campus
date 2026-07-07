@@ -21,6 +21,7 @@ const corsOptions = {
     if (!origin) {
       return callback(null, true);
     }
+    
 
     if (allowedOrigins.length === 0) {
       if (NODE_ENV === 'production') {
