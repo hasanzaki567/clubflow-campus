@@ -24,9 +24,3 @@ dist-ssr
 *.sw?
 
 server/.env
-server/.env.local
-server/.env.development
-server/.env.production
-server/.env.test
-server/.env.*
-!server/.env.example
