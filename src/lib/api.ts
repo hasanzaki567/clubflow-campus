@@ -447,7 +447,7 @@ class ApiClient {
     return response.json();
   }
 
-  async sendChatMessage(conversationId: string, messageData: SendMessageRequest): Promise<{ message: string; message: ChatMessage }> {
+  async sendChatMessage(conversationId: string, messageData: SendMessageRequest): Promise<{ message: string; chatMessage: ChatMessage }> {
     const response = await fetch(`${API_BASE_URL}/chat/conversations/${conversationId}/messages`, {
       method: 'POST',
       headers: this.getAuthHeaders(),
