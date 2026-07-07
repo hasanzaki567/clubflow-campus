@@ -42,6 +42,7 @@ import {
 } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import NotificationDropdown from "./NotificationDropdown";
+import { useUser } from "@/contexts/UserContext";
 
 interface LayoutProps {
   children: ReactNode;
@@ -49,6 +50,7 @@ interface LayoutProps {
 
 const Layout = ({ children }: LayoutProps) => {
   const location = useLocation();
+  const { user, logout } = useUser();
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isAdminExpanded, setIsAdminExpanded] = useState(false);
   const [isSearchExpanded, setIsSearchExpanded] = useState(false);
@@ -82,6 +84,21 @@ const Layout = ({ children }: LayoutProps) => {
   ];
 
   const isActive = (href: string) => location.pathname === href;
+
+  const displayName = user?.name ?? "Guest";
+  const displayRole = user
+    ? user.role === "admin"
+      ? "Super Admin"
+      : user.role === "student"
+        ? "Student"
+        : user.role.charAt(0).toUpperCase() + user.role.slice(1).replace("_", " ")
+    : "Not signed in";
+  const displayAvatar = (user?.avatar ?? displayName
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part.charAt(0).toUpperCase())
+    .join("")) || "U";
 
   const handleAdminAction = (action: string) => {
     // Handle admin actions here
@@ -218,6 +235,7 @@ Click OK to configure export settings.`);
       await new Promise(resolve => setTimeout(resolve, 2000));
 
       // Clear user session data
+      logout();
       localStorage.removeItem('userToken');
       localStorage.removeItem('userSession');
       localStorage.removeItem('userPreferences');
@@ -488,11 +506,11 @@ There was an error signing you out. Please try again or contact support if the p
           <div className="p-4 border-t border-border">
             <div className="flex items-center gap-3 mb-3">
               <div className="w-8 h-8 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-sm font-medium">
-                JD
+                {displayAvatar}
               </div>
               <div className="flex-1">
-                <p className="text-sm font-medium text-foreground">John Doe</p>
-                <p className="text-xs text-muted-foreground">Student</p>
+                <p className="text-sm font-medium text-foreground">{displayName}</p>
+                <p className="text-xs text-muted-foreground">{displayRole}</p>
               </div>
             </div>
             <Button

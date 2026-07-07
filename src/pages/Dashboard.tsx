@@ -229,7 +229,7 @@ const Dashboard = () => {
             </div>
 
             {/* User Info and Logout */}
-            {user && (
+           {/* {user && (
               <div className="hidden md:flex items-center gap-4">
                 <div className="flex items-center gap-3 px-4 py-2 bg-muted/50 rounded-lg border">
                   <div className="text-2xl">
@@ -254,7 +254,7 @@ const Dashboard = () => {
                   Logout
                 </Button>
               </div>
-            )}
+            )} */}
 
             {/* Desktop Navigation */}
             <div className="hidden lg:flex items-center gap-4 xl:gap-6">
