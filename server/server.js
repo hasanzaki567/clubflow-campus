@@ -612,11 +612,11 @@ app.post('/api/chat/ai-response', authenticateToken, async (req, res) => {
     );
 
     const messageId = result.lastInsertRowid;
-    const message = dbUtils.getMessageById.get(messageId);
+    const messageData = dbUtils.getMessageById.get(messageId);
 
     res.json({
       message: 'Message sent successfully',
-      messageData: message
+      messageData
     });
   } catch (error) {
     console.error('AI response error:', error);

@@ -688,7 +688,7 @@ export const dbUtils = {
   // Sponsorship operations
   createSponsorship: db.prepare(`
     INSERT INTO sponsorships (title, description, sponsor_name, sponsor_type, contact_person, contact_email, contact_phone, website, address, category, sponsorship_type, amount, currency, status, priority, fiscal_year, start_date, end_date, duration_months, renewal_status, benefits, deliverables, contract_url, assigned_to, created_by, notes, tags)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `),
 
   getSponsorshipById: db.prepare(`
