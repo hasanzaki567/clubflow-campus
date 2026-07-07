@@ -24,9 +24,6 @@ const corsOptions = {
     
 
     if (allowedOrigins.length === 0) {
-      if (NODE_ENV === 'production') {
-        return callback(new Error('CORS origin not configured'));
-      }
       return callback(null, true);
     }
 
