@@ -40,7 +40,7 @@ import {
   Menu,
   X
 } from "lucide-react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import NotificationDropdown from "./NotificationDropdown";
 import { useUser } from "@/contexts/UserContext";
 
@@ -50,6 +50,7 @@ interface LayoutProps {
 
 const Layout = ({ children }: LayoutProps) => {
   const location = useLocation();
+  const navigate = useNavigate();
   const { user, logout } = useUser();
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isAdminExpanded, setIsAdminExpanded] = useState(false);
@@ -246,7 +247,7 @@ Click OK to configure export settings.`);
 
       // Redirect after showing success message
       setTimeout(() => {
-        window.location.href = '/login';
+        navigate('/login');
       }, 3000);
 
     } catch (error) {

@@ -28,35 +28,35 @@ const queryClient = new QueryClient();
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
-      <NotificationProvider>
-        <RecommendationProvider>
-          <ChatProvider>
-            <UserProvider>
-            <Toaster />
-            <Sonner />
-            <BrowserRouter>
-            <Routes>
-              <Route path="/" element={<Index />} />
-              <Route path="/login" element={<Login />} />
-              <Route path="/signup" element={<Signup />} />
-              <Route path="/dashboard" element={<Layout><Dashboard /></Layout>} />
-              <Route path="/events" element={<Layout><Events /></Layout>} />
-              <Route path="/events/new" element={<Layout><AddEvent /></Layout>} />
-              <Route path="/clubs" element={<Layout><Clubs /></Layout>} />
-              <Route path="/budget" element={<Layout><BudgetManagement /></Layout>} />
-              <Route path="/sponsorships" element={<Layout><SponsorshipManagement /></Layout>} />
-              <Route path="/chat" element={<Layout><ChatSystem /></Layout>} />
-              <Route path="/collaboration" element={<Layout><Collaboration /></Layout>} />
-              <Route path="/communication" element={<Layout><Communication /></Layout>} />
-              <Route path="/settings" element={<Layout><Settings /></Layout>} />
-              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </BrowserRouter>
+      <BrowserRouter>
+        <UserProvider>
+          <NotificationProvider>
+            <RecommendationProvider>
+              <ChatProvider>
+                <Toaster />
+                <Sonner />
+                <Routes>
+                  <Route path="/" element={<Index />} />
+                  <Route path="/login" element={<Login />} />
+                  <Route path="/signup" element={<Signup />} />
+                  <Route path="/dashboard" element={<Layout><Dashboard /></Layout>} />
+                  <Route path="/events" element={<Layout><Events /></Layout>} />
+                  <Route path="/events/new" element={<Layout><AddEvent /></Layout>} />
+                  <Route path="/clubs" element={<Layout><Clubs /></Layout>} />
+                  <Route path="/budget" element={<Layout><BudgetManagement /></Layout>} />
+                  <Route path="/sponsorships" element={<Layout><SponsorshipManagement /></Layout>} />
+                  <Route path="/chat" element={<Layout><ChatSystem /></Layout>} />
+                  <Route path="/collaboration" element={<Layout><Collaboration /></Layout>} />
+                  <Route path="/communication" element={<Layout><Communication /></Layout>} />
+                  <Route path="/settings" element={<Layout><Settings /></Layout>} />
+                  {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+                  <Route path="*" element={<NotFound />} />
+                </Routes>
+              </ChatProvider>
+            </RecommendationProvider>
+          </NotificationProvider>
         </UserProvider>
-      </ChatProvider>
-    </RecommendationProvider>
-  </NotificationProvider>
+      </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
 );

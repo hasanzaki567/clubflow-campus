@@ -7,6 +7,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { useNotifications } from '@/contexts/NotificationContext';
 import type { Notification, NotificationType } from '@/types/notification';
+import { useNavigate } from 'react-router-dom';
 
 interface NotificationDropdownProps {
   className?: string;
@@ -16,6 +17,7 @@ const NotificationDropdown: React.FC<NotificationDropdownProps> = ({ className }
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const { notifications, unreadCount, markAsRead, markAllAsRead, deleteNotification, clearAll } = useNotifications();
+  const navigate = useNavigate();
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -79,7 +81,7 @@ const NotificationDropdown: React.FC<NotificationDropdownProps> = ({ className }
       markAsRead(notification.id);
     }
     if (notification.actionUrl) {
-      window.location.href = notification.actionUrl;
+      navigate(notification.actionUrl);
     }
     setIsOpen(false);
   };

@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { apiClient } from '@/lib/api';
 
 export interface User {
@@ -33,6 +34,7 @@ interface UserProviderProps {
 export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const navigate = useNavigate();
 
   const login = async (email: string, password: string): Promise<boolean> => {
     setIsLoading(true);
@@ -55,7 +57,7 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
 
       // Redirect to dashboard
       setTimeout(() => {
-        window.location.href = '/dashboard';
+        navigate('/dashboard');
       }, 500);
 
       return true;

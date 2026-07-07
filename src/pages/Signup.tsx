@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { GraduationCap, Mail, Lock, User, Building2, Users, ArrowRight, Eye, EyeOff, CheckCircle, AlertCircle } from "lucide-react";
 import { apiClient } from "@/lib/api";
 
@@ -21,6 +21,7 @@ interface FormErrors {
 }
 
 const Signup = () => {
+  const navigate = useNavigate();
   const [formData, setFormData] = useState<FormData>({
     name: "",
     email: "",
@@ -105,7 +106,7 @@ const Signup = () => {
 
       // Show success message and redirect to login
       alert(`🎉 Account created successfully!\n\nWelcome to Campbuzz, ${formData.name}!\n\nYou can now log in with your credentials.`);
-      window.location.href = '/login';
+      navigate('/login');
     } catch (error: unknown) {
       console.error("Signup error:", error);
       const errorMessage = error instanceof Error ? error.message : "Signup failed. Please try again.";
